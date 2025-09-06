@@ -1,11 +1,20 @@
 import axios from "axios";
 
+// クラウド環境の時のURL（テストデプロイ）
+// const DEFAULT_API_BASE_URL = "http://is-test-backend-java-env.eba-jz65xr2a.ap-northeast-3.elasticbeanstalk.com";
+// export const api = axios.create({
+//   baseURL: import.meta.env.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL,
+//   timeout: 10000,
+// });
+
+// ローカル環境の時のURL（開発時はこちらを使用）
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080",
   timeout: 10000,
 });
 
-
+// backendが起動しているかの確認api
+export const message = () => api.get("/message").then((r: { data: any; }) => r.data);
 
 // Users
 export const getUsers    = () => api.get("/users").then((r: { data: any; }) => r.data);

@@ -9,6 +9,8 @@ type NewCompany = { companyName: string; companyAddress: string };
 type EditCompany = { companyId: number | ""; companyName: string; companyAddress: string };
 
 export default function App() {
+
+  const [message, setMessage] = useState<string>("");
   // データ
   const [users, setUsers] = useState<User[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -22,6 +24,10 @@ export default function App() {
   const [editCompany, setEditCompany] = useState<EditCompany>({ companyId: "", companyName: "", companyAddress: "" });
 
   // 初期ロード & 操作後に再取得
+  const loadMessage = async() => {
+    const res = await api.get<string>("/api/message");
+    setMessage(res.data);
+  }
   const loadUsers = async () => {
     const res = await api.get<User[]>("/api/users");
     setUsers(res.data);
@@ -33,6 +39,7 @@ export default function App() {
 
   useEffect(() => {
     // 画面表示時に両方ロード
+    loadMessage(); 
     loadUsers();
     loadCompanies();
   }, []);
@@ -107,84 +114,132 @@ export default function App() {
     });
   };
 
-  return (
-    <div className="min-h-screen p-6 space-y-10">
-      <h1 className="text-2xl font-bold">Data Manager</h1>
+return (
+  <div className="min-h-screen bg-gray-100 py-10">
+    <div className="max-w-5xl mx-auto space-y-10">
+      <h1 className="text-3xl font-bold text-center text-gray-800">
+        Data Manager
+      </h1>
+
+      {/* メッセージ */}
+      <section className="bg-white p-6 rounded-2xl shadow">
+        <h2 className="text-lg font-semibold text-gray-700 mb-2">
+          バックエンド接続確認
+        </h2>
+        <p className="text-gray-600">{message || "未取得"}</p>
+      </section>
 
       {/* Users セクション */}
-      <section className="space-y-4">
+      <section className="bg-white p-6 rounded-2xl shadow space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Users</h2>
-          <div className="flex gap-2">
-            <button onClick={loadUsers} className="px-3 py-2 rounded-2xl shadow border">再読込</button>
-          </div>
+          <h2 className="text-2xl font-semibold text-gray-800">ユーザーテーブル</h2>
+          <button
+            onClick={loadUsers}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600"
+          >
+            再読込
+          </button>
         </div>
 
-        {/* Create / Update フォーム（横並び） */}
-        <div className="grid md:grid-cols-2 gap-4">
+        {/* Create / Update フォーム */}
+        <div className="grid md:grid-cols-2 gap-6">
           {/* Create User */}
-          <div className="rounded-2xl border p-4 shadow-sm">
-            <h3 className="font-semibold mb-3">Create User</h3>
-            <div className="grid grid-cols-3 gap-3 items-center">
-              <label className="text-sm text-gray-600 col-span-1">UserName</label>
-              <input
-                className="col-span-2 border rounded-lg px-3 py-2"
-                value={newUser.userName}
-                onChange={(e) => setNewUser((s) => ({ ...s, userName: e.target.value }))}
-                placeholder="e.g. Alice"
-              />
-              <label className="text-sm text-gray-600 col-span-1">CompanyID</label>
-              <input
-                className="col-span-2 border rounded-lg px-3 py-2"
-                type="number"
-                value={newUser.companyId}
-                onChange={(e) => setNewUser((s) => ({ ...s, companyId: e.target.value === "" ? "" : Number(e.target.value) }))}
-                placeholder="e.g. 1"
-              />
-            </div>
-            <div className="mt-3">
-              <button onClick={createUser} className="px-4 py-2 rounded-2xl shadow border">作成</button>
+          <div className="p-4 border rounded-xl bg-gray-50">
+            <h3 className="font-semibold text-gray-700 mb-3">ユーザー作成</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-600">ユーザー名</label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={newUser.userName}
+                  onChange={(e) =>
+                    setNewUser((s) => ({ ...s, userName: e.target.value }))
+                  }
+                  placeholder="e.g. Alice"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">会社ID</label>
+                <input
+                  type="number"
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={newUser.companyId}
+                  onChange={(e) =>
+                    setNewUser((s) => ({
+                      ...s,
+                      companyId: e.target.value === "" ? "" : Number(e.target.value),
+                    }))
+                  }
+                  placeholder="e.g. 1"
+                />
+              </div>
+              <button
+                onClick={createUser}
+                className="w-full px-4 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600"
+              >
+                作成
+              </button>
             </div>
           </div>
 
           {/* Update User */}
-          <div className="rounded-2xl border p-4 shadow-sm">
-            <h3 className="font-semibold mb-3">Update User</h3>
-            <div className="grid grid-cols-3 gap-3 items-center">
-              <label className="text-sm text-gray-600 col-span-1">ID</label>
-              <input
-                className="col-span-2 border rounded-lg px-3 py-2"
-                type="number"
-                value={editUser.id}
-                onChange={(e) => setEditUser((s) => ({ ...s, id: e.target.value === "" ? "" : Number(e.target.value) }))}
-                placeholder="編集対象のID"
-              />
-              <label className="text-sm text-gray-600 col-span-1">UserName</label>
-              <input
-                className="col-span-2 border rounded-lg px-3 py-2"
-                value={editUser.userName}
-                onChange={(e) => setEditUser((s) => ({ ...s, userName: e.target.value }))}
-              />
-              <label className="text-sm text-gray-600 col-span-1">CompanyID</label>
-              <input
-                className="col-span-2 border rounded-lg px-3 py-2"
-                type="number"
-                value={editUser.companyId}
-                onChange={(e) => setEditUser((s) => ({ ...s, companyId: e.target.value === "" ? "" : Number(e.target.value) }))}
-              />
+          <div className="p-4 border rounded-xl bg-gray-50">
+            <h3 className="font-semibold text-gray-700 mb-3">ユーザー更新</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-600">ID</label>
+                <input
+                  type="number"
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={editUser.id}
+                  onChange={(e) =>
+                    setEditUser((s) => ({
+                      ...s,
+                      id: e.target.value === "" ? "" : Number(e.target.value),
+                    }))
+                  }
+                  placeholder="編集対象のID"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">ユーザー名</label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={editUser.userName}
+                  onChange={(e) =>
+                    setEditUser((s) => ({ ...s, userName: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">会社ID</label>
+                <input
+                  type="number"
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={editUser.companyId}
+                  onChange={(e) =>
+                    setEditUser((s) => ({
+                      ...s,
+                      companyId: e.target.value === "" ? "" : Number(e.target.value),
+                    }))
+                  }
+                />
+              </div>
+              <button
+                onClick={updateUser}
+                className="w-full px-4 py-2 bg-yellow-500 text-white rounded-lg shadow hover:bg-yellow-600"
+              >
+                更新
+              </button>
             </div>
-            <div className="mt-3">
-              <button onClick={updateUser} className="px-4 py-2 rounded-2xl shadow border">更新</button>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">※ テーブルの「編集」ボタンで入力欄に転記できます</p>
           </div>
         </div>
 
         {/* Users Table */}
-        <div className="overflow-x-auto rounded-2xl border">
-          <table className="min-w-[640px] table-auto border-collapse">
+        <div className="overflow-x-auto rounded-xl border">
+          <table className="min-w-[640px] w-full border-collapse">
             <thead>
-              <tr className="text-left border-b bg-gray-50">
+              <tr className="bg-gray-700 text-white">
                 <th className="py-2 px-3">ID</th>
                 <th className="py-2 px-3">UserName</th>
                 <th className="py-2 px-3">CompanyID</th>
@@ -192,22 +247,35 @@ export default function App() {
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => (
-                <tr key={u.id} className="border-b">
+              {users.map((u, i) => (
+                <tr
+                  key={u.id}
+                  className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                >
                   <td className="py-2 px-3">{u.id}</td>
                   <td className="py-2 px-3">{u.userName}</td>
                   <td className="py-2 px-3">{u.companyId}</td>
-                  <td className="py-2 px-3">
-                    <div className="flex gap-2">
-                      <button className="px-3 py-1 rounded-xl border shadow-sm" onClick={() => pickUserForEdit(u)}>編集</button>
-                      <button className="px-3 py-1 rounded-xl border shadow-sm" onClick={() => deleteUser(u.id)}>削除</button>
-                    </div>
+                  <td className="py-2 px-3 flex gap-2">
+                    <button
+                      className="px-3 py-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
+                      onClick={() => pickUserForEdit(u)}
+                    >
+                      編集
+                    </button>
+                    <button
+                      className="px-3 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600"
+                      onClick={() => deleteUser(u.id)}
+                    >
+                      削除
+                    </button>
                   </td>
                 </tr>
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td className="py-4 px-3 text-gray-500" colSpan={4}>ユーザーはまだありません</td>
+                  <td className="py-4 px-3 text-gray-500 text-center" colSpan={4}>
+                    ユーザーはまだありません
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -215,101 +283,135 @@ export default function App() {
         </div>
       </section>
 
+      {/* Companies セクションも同様に整える */}
       {/* Companies セクション */}
-      <section className="space-y-4">
+      <section className="bg-white p-6 rounded-2xl shadow space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Companies</h2>
-          <div className="flex gap-2">
-            <button onClick={loadCompanies} className="px-3 py-2 rounded-2xl shadow border">再読込</button>
-          </div>
+          <h2 className="text-2xl font-semibold text-gray-800">会社テーブル</h2>
+          <button
+            onClick={loadCompanies}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600"
+          >
+            再読込
+          </button>
         </div>
 
-        {/* Create / Update フォーム（横並び） */}
-        <div className="grid md:grid-cols-2 gap-4">
+        {/* Create / Update フォーム */}
+        <div className="grid md:grid-cols-2 gap-6">
           {/* Create Company */}
-          <div className="rounded-2xl border p-4 shadow-sm">
-            <h3 className="font-semibold mb-3">Create Company</h3>
-            <div className="grid grid-cols-3 gap-3 items-center">
-              <label className="text-sm text-gray-600 col-span-1">CompanyName</label>
-              <input
-                className="col-span-2 border rounded-lg px-3 py-2"
-                value={newCompany.companyName}
-                onChange={(e) => setNewCompany((s) => ({ ...s, companyName: e.target.value }))}
-                placeholder="e.g. ACME Inc."
-              />
-              <label className="text-sm text-gray-600 col-span-1">CompanyAddress</label>
-              <input
-                className="col-span-2 border rounded-lg px-3 py-2"
-                value={newCompany.companyAddress}
-                onChange={(e) => setNewCompany((s) => ({ ...s, companyAddress: e.target.value }))}
-                placeholder="住所（任意）"
-              />
-            </div>
-            <div className="mt-3">
-              <button onClick={createCompany} className="px-4 py-2 rounded-2xl shadow border">作成</button>
+          <div className="p-4 border rounded-xl bg-gray-50">
+            <h3 className="font-semibold text-gray-700 mb-3">会社作成</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-600">会社名</label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={newCompany.companyName}
+                  onChange={(e) => setNewCompany((s) => ({ ...s, companyName: e.target.value }))}
+                  placeholder="株式会社IS"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">会社住所</label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={newCompany.companyAddress}
+                  onChange={(e) => setNewCompany((s) => ({ ...s, companyAddress: e.target.value }))}
+                  placeholder="大阪府大阪市"
+                />
+              </div>
+              <button
+                onClick={createCompany}
+                className="w-full px-4 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600"
+              >
+                作成
+              </button>
             </div>
           </div>
 
           {/* Update Company */}
-          <div className="rounded-2xl border p-4 shadow-sm">
-            <h3 className="font-semibold mb-3">Update Company</h3>
-            <div className="grid grid-cols-3 gap-3 items-center">
-              <label className="text-sm text-gray-600 col-span-1">CompanyID</label>
-              <input
-                className="col-span-2 border rounded-lg px-3 py-2"
-                type="number"
-                value={editCompany.companyId}
-                onChange={(e) => setEditCompany((s) => ({ ...s, companyId: e.target.value === "" ? "" : Number(e.target.value) }))}
-                placeholder="編集対象のID"
-              />
-              <label className="text-sm text-gray-600 col-span-1">CompanyName</label>
-              <input
-                className="col-span-2 border rounded-lg px-3 py-2"
-                value={editCompany.companyName}
-                onChange={(e) => setEditCompany((s) => ({ ...s, companyName: e.target.value }))}
-              />
-              <label className="text-sm text-gray-600 col-span-1">CompanyAddress</label>
-              <input
-                className="col-span-2 border rounded-lg px-3 py-2"
-                value={editCompany.companyAddress}
-                onChange={(e) => setEditCompany((s) => ({ ...s, companyAddress: e.target.value }))}
-              />
+          <div className="p-4 border rounded-xl bg-gray-50">
+            <h3 className="font-semibold text-gray-700 mb-3">会社更新</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-gray-600">ID</label>
+                <input
+                  type="number"
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={editCompany.companyId}
+                  onChange={(e) =>
+                    setEditCompany((s) => ({
+                      ...s,
+                      id: e.target.value === "" ? "" : Number(e.target.value),
+                    }))
+                  }
+                  placeholder="編集対象のID"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">会社名</label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={editCompany.companyName}
+                  onChange={(e) => setEditCompany((s) => ({ ...s, companyName: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">会社住所</label>
+                <input
+                  className="w-full border rounded-lg px-3 py-2"
+                  value={editCompany.companyAddress}
+                  onChange={(e) => setEditCompany((s) => ({ ...s, companyAddress: e.target.value }))}
+                />
+              </div>
+              <button
+                onClick={updateCompany}
+                className="w-full px-4 py-2 bg-yellow-500 text-white rounded-lg shadow hover:bg-yellow-600"
+              >
+                更新
+              </button>
             </div>
-            <div className="mt-3">
-              <button onClick={updateCompany} className="px-4 py-2 rounded-2xl shadow border">更新</button>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">※ テーブルの「編集」ボタンで入力欄に転記できます</p>
           </div>
         </div>
 
         {/* Companies Table */}
-        <div className="overflow-x-auto rounded-2xl border">
-          <table className="min-w-[720px] table-auto border-collapse">
+        <div className="overflow-x-auto rounded-xl border">
+          <table className="min-w-[640px] w-full border-collapse">
             <thead>
-              <tr className="text-left border-b bg-gray-50">
-                <th className="py-2 px-3">CompanyID</th>
+              <tr className="bg-gray-700 text-white">
+                <th className="py-2 px-3">ID</th>
                 <th className="py-2 px-3">CompanyName</th>
                 <th className="py-2 px-3">CompanyAddress</th>
                 <th className="py-2 px-3">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {companies.map((c) => (
-                <tr key={c.companyId} className="border-b">
+              {companies.map((c, i) => (
+                <tr key={c.companyId} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                   <td className="py-2 px-3">{c.companyId}</td>
                   <td className="py-2 px-3">{c.companyName}</td>
                   <td className="py-2 px-3">{c.companyAddress}</td>
-                  <td className="py-2 px-3">
-                    <div className="flex gap-2">
-                      <button className="px-3 py-1 rounded-xl border shadow-sm" onClick={() => pickCompanyForEdit(c)}>編集</button>
-                      <button className="px-3 py-1 rounded-xl border shadow-sm" onClick={() => deleteCompany(c.companyId)}>削除</button>
-                    </div>
+                  <td className="py-2 px-3 flex gap-2">
+                    <button
+                      className="px-3 py-1 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
+                      onClick={() => pickCompanyForEdit(c)}
+                    >
+                      編集
+                    </button>
+                    <button
+                      className="px-3 py-1 rounded-lg bg-red-500 text-white hover:bg-red-600"
+                      onClick={() => deleteCompany(c.companyId)}
+                    >
+                      削除
+                    </button>
                   </td>
                 </tr>
               ))}
               {companies.length === 0 && (
                 <tr>
-                  <td className="py-4 px-3 text-gray-500" colSpan={4}>会社はまだありません</td>
+                  <td className="py-4 px-3 text-gray-500 text-center" colSpan={4}>
+                    会社データはまだありません
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -317,5 +419,7 @@ export default function App() {
         </div>
       </section>
     </div>
-  );
+  </div>
+);
+
 }
