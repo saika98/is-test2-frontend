@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "./lib/api";
 import type { User, Company } from "./types";
+import ResumeUploader from "./components/ResumeUploader";
 
 type NewUser = { userName: string; companyId: number | "" };
 type EditUser = { id: number | ""; userName: string; companyId: number | "" };
@@ -418,6 +419,9 @@ return (
           </table>
         </div>
       </section>
+      <div>
+        <ResumeUploader />
+      </div>
     </div>
   </div>
 );
