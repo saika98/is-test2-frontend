@@ -1,24 +1,46 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-// .env で VITE_API_BASE_URL=http://localhost:8080 を設定しておく
 const API = (import.meta as any).env.VITE_API_BASE_URL || "http://localhost:8080";
-type InitResp = { resumeId: string; s3Key: string; uploadUrl: string };
+
+// 既存のアップロード返却 + 一覧返却のどちらでも扱えるようにする
+type Row = {
+  resumeId: string;
+  s3Key: string;
+  uploadUrl?: string;      // init-uploads時のみ
+  originalName?: string;   // 一覧APIで付与
+  status?: string;         // 一覧APIで付与
+  fileSizeBytes?: number;  // 一覧APIで付与
+  etag?: string;           // 一覧APIで付与
+  updatedAt?: string;      // 一覧APIで付与
+};
 
 export default function ResumeUploader() {
-  const [rows, setRows] = useState<InitResp[]>([]);
+  const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(false);
 
-  // テスト用に固定。実際はフォームから入れる想定
   const candidateId = "11111111-1111-1111-1111-111111111111";
   const uploadedBy = "saika";
+
+  // ★ 初期表示で一覧取得
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`${API}/api/resumes?candidateId=${candidateId}`);
+        if (!r.ok) throw new Error("list failed");
+        const data: Row[] = await r.json();
+        setRows(data);
+      } catch (e) {
+        console.error(e);
+      }
+    })();
+  }, []);
 
   const onSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return;
     const files = Array.from(e.target.files);
-    console.log("files情報", files);
     setBusy(true);
     try {
-      // 1) 初期化（プリサインURL発行 + DBにPENDING）
+      // 1) 初期化
       const payload = {
         candidateId,
         uploadedBy,
@@ -30,12 +52,12 @@ export default function ResumeUploader() {
         body: JSON.stringify(payload),
       });
       if (!initRes.ok) throw new Error("init-uploads failed");
-      const inits: InitResp[] = await initRes.json();
+      const inits: Row[] = await initRes.json();
 
-      // 2) 直接S3にPUT
+      // 2) S3にPUT
       await Promise.all(
         inits.map((it, i) =>
-          fetch(it.uploadUrl, {
+          fetch(it.uploadUrl!, {
             method: "PUT",
             headers: { "Content-Type": files[i].type || "application/octet-stream" },
             body: files[i],
@@ -45,20 +67,22 @@ export default function ResumeUploader() {
         )
       );
 
-      // 3) 完了報告（DBをCOMPLETEDに & size/ETag確定）
+      // 3) 完了報告
       await fetch(`${API}/api/resumes/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resumeIds: inits.map(x => x.resumeId) }),
       });
 
+      // 4) 画面更新：アップロード直後の行を先頭に追加（originalName等は未設定でもOK）
       setRows(prev => [...inits, ...prev]);
+
       alert("アップロード完了");
     } catch (e: any) {
       alert(e?.message ?? "upload error");
     } finally {
       setBusy(false);
-      e.target.value = ""; // 同じファイルの再選択を許可
+      e.target.value = "";
     }
   };
 
@@ -71,12 +95,31 @@ export default function ResumeUploader() {
   return (
     <div style={{ padding: 24 }}>
       <h2>Resume Uploader</h2>
+
+      <div style={{ marginBottom: 12 }}>
+        <button
+          disabled={busy}
+          onClick={async () => {
+            // 手動リロードボタン（任意）
+            const r = await fetch(`${API}/api/resumes?candidateId=${candidateId}`);
+            const data: Row[] = await r.json();
+            setRows(data);
+          }}
+        >
+          一覧を再読込
+        </button>
+      </div>
+
       <input type="file" multiple onChange={onSelect} disabled={busy} />
       <ul>
         {rows.map(r => (
           <li key={r.resumeId}>
-            <code>{r.s3Key}</code>{" "}
-            <button onClick={() => download(r.resumeId)}>ダウンロード</button>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+              <code title={r.s3Key}>{r.originalName ?? r.s3Key}</code>
+              {typeof r.fileSizeBytes === "number" && <span>({r.fileSizeBytes} bytes)</span>}
+              {r.status && <span>status: {r.status}</span>}
+              <button onClick={() => download(r.resumeId)}>ダウンロード</button>
+            </div>
           </li>
         ))}
       </ul>
