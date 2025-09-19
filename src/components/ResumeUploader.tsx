@@ -92,6 +92,22 @@ export default function ResumeUploader() {
     window.open(url, "_blank");
   };
 
+  // ★ 削除ハンドラ（1件）
+  const removeOne = async (resumeId: string) => {
+    if (!confirm("このファイルを削除しますか？")) return;
+    // 楽観的更新
+    const prev = rows;
+    setRows(prev => prev.filter(r => r.resumeId !== resumeId));
+    try {
+      const res = await fetch(`${API}/api/resumes/${resumeId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("delete failed");
+      // 204 No Content を想定。OKなら何もしない
+    } catch (e) {
+      alert("削除に失敗しました。リストを戻します。");
+      setRows(prev); // ロールバック
+    }
+  };
+
   return (
     <div style={{ padding: 24 }}>
       <h2>Resume Uploader</h2>
@@ -119,6 +135,7 @@ export default function ResumeUploader() {
               {typeof r.fileSizeBytes === "number" && <span>({r.fileSizeBytes} bytes)</span>}
               {r.status && <span>status: {r.status}</span>}
               <button onClick={() => download(r.resumeId)}>ダウンロード</button>
+              <button onClick={() => removeOne(r.resumeId)}>削除</button> 
             </div>
           </li>
         ))}
