@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
+// クラウドの場合
+// const DEFAULT_API_BASE_URL = "http://is-test-backend-java-env.eba-jz65xr2a.ap-northeast-3.elasticbeanstalk.com";
+// ローカルの場合
+const DEFAULT_API_BASE_URL = "http://localhost:8080";
 
-const API = (import.meta as any).env.VITE_API_BASE_URL || "http://localhost:8080";
+const API = (import.meta as any).env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL;
 
 // 既存のアップロード返却 + 一覧返却のどちらでも扱えるようにする
 type Row = {
